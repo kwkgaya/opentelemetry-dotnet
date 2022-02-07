@@ -13,7 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // </copyright>
-#if !XAMARIN
+
+#if XAMARIN
+
 using System;
 using System.Diagnostics.Tracing;
 
@@ -23,12 +25,13 @@ namespace OpenTelemetry.Internal
     /// EventSource implementation for OpenTelemetry API.
     /// This is used for internal logging of this library.
     /// </summary>
-    [EventSource(Name = "OpenTelemetry-Api")]
-    internal class OpenTelemetryApiEventSource : EventSource
+    internal class OpenTelemetryApiEventSource : SelfLogBase
     {
+        protected override string Source => "OpenTelemetry-Api";
+
         public static OpenTelemetryApiEventSource Log = new OpenTelemetryApiEventSource();
 
-        [NonEvent]
+        // [NonEvent]
         public void ActivityContextExtractException(string format, Exception ex)
         {
             if (this.IsEnabled(EventLevel.Warning, EventKeywords.All))
@@ -37,7 +40,7 @@ namespace OpenTelemetry.Internal
             }
         }
 
-        [NonEvent]
+        // [NonEvent]
         public void BaggageExtractException(string format, Exception ex)
         {
             if (this.IsEnabled(EventLevel.Warning, EventKeywords.All))
@@ -46,7 +49,7 @@ namespace OpenTelemetry.Internal
             }
         }
 
-        [NonEvent]
+        // [NonEvent]
         public void TracestateExtractException(Exception ex)
         {
             if (this.IsEnabled(EventLevel.Warning, EventKeywords.All))
@@ -55,7 +58,7 @@ namespace OpenTelemetry.Internal
             }
         }
 
-        [NonEvent]
+        // [NonEvent]
         public void TracestateKeyIsInvalid(ReadOnlySpan<char> key)
         {
             if (this.IsEnabled(EventLevel.Warning, EventKeywords.All))
@@ -64,7 +67,7 @@ namespace OpenTelemetry.Internal
             }
         }
 
-        [NonEvent]
+        // [NonEvent]
         public void TracestateValueIsInvalid(ReadOnlySpan<char> value)
         {
             if (this.IsEnabled(EventLevel.Warning, EventKeywords.All))
@@ -73,58 +76,58 @@ namespace OpenTelemetry.Internal
             }
         }
 
-        [Event(3, Message = "Failed to parse tracestate: too many items", Level = EventLevel.Warning)]
+        // [Event(3, Message = "Failed to parse tracestate: too many items", Level = EventLevel.Warning)]
         public void TooManyItemsInTracestate()
         {
-            this.WriteEvent(3);
+            this.WriteEvent(EventLevel.Warning, 3, "Failed to parse tracestate: too many items");
         }
 
-        [Event(4, Message = "Tracestate key is invalid, key = '{0}'", Level = EventLevel.Warning)]
+        // [Event(4, Message = "Tracestate key is invalid, key = '{0}'", Level = EventLevel.Warning)]
         public void TracestateKeyIsInvalid(string key)
         {
-            this.WriteEvent(4, key);
+            this.WriteEvent(EventLevel.Warning, 4, "Tracestate key is invalid, key = '{0}'", key);
         }
 
-        [Event(5, Message = "Tracestate value is invalid, value = '{0}'", Level = EventLevel.Warning)]
+        // [Event(5, Message = "Tracestate value is invalid, value = '{0}'", Level = EventLevel.Warning)]
         public void TracestateValueIsInvalid(string value)
         {
-            this.WriteEvent(5, value);
+            this.WriteEvent(EventLevel.Warning, 5, "Tracestate value is invalid, value = '{0}'", value);
         }
 
-        [Event(6, Message = "Tracestate parse error: '{0}'", Level = EventLevel.Warning)]
+        // [Event(6, Message = "Tracestate parse error: '{0}'", Level = EventLevel.Warning)]
         public void TracestateExtractError(string error)
         {
-            this.WriteEvent(6, error);
+            this.WriteEvent(EventLevel.Warning, 6, "Tracestate parse error: '{0}'", error);
         }
 
-        [Event(7, Message = "Calling method '{0}' with invalid argument '{1}', issue '{2}'.", Level = EventLevel.Warning)]
+        // [Event(7, Message = "Calling method '{0}' with invalid argument '{1}', issue '{2}'.", Level = EventLevel.Warning)]
         public void InvalidArgument(string methodName, string argumentName, string issue)
         {
-            this.WriteEvent(7, methodName, argumentName, issue);
+            this.WriteEvent(EventLevel.Warning, 7, "Calling method '{0}' with invalid argument '{1}', issue '{2}'.", methodName, argumentName, issue);
         }
 
-        [Event(8, Message = "Failed to extract activity context in format: '{0}', context: '{1}'.", Level = EventLevel.Warning)]
+        // [Event(8, Message = "Failed to extract activity context in format: '{0}', context: '{1}'.", Level = EventLevel.Warning)]
         public void FailedToExtractActivityContext(string format, string exception)
         {
-            this.WriteEvent(8, format, exception);
+            this.WriteEvent(EventLevel.Warning, 8, "Failed to extract activity context in format: '{0}', context: '{1}'.", format, exception);
         }
 
-        [Event(9, Message = "Failed to inject activity context in format: '{0}', context: '{1}'.", Level = EventLevel.Warning)]
+        // [Event(9, Message = "Failed to inject activity context in format: '{0}', context: '{1}'.", Level = EventLevel.Warning)]
         public void FailedToInjectActivityContext(string format, string error)
         {
-            this.WriteEvent(9, format, error);
+            this.WriteEvent(EventLevel.Warning, 9, "Failed to inject activity context in format: '{0}', context: '{1}'.", format, error);
         }
 
-        [Event(10, Message = "Failed to extract baggage in format: '{0}', baggage: '{1}'.", Level = EventLevel.Warning)]
+        // [Event(10, Message = "Failed to extract baggage in format: '{0}', baggage: '{1}'.", Level = EventLevel.Warning)]
         public void FailedToExtractBaggage(string format, string exception)
         {
-            this.WriteEvent(10, format, exception);
+            this.WriteEvent(EventLevel.Warning, 10, "Failed to extract baggage in format: '{0}', baggage: '{1}'.", format, exception);
         }
 
-        [Event(11, Message = "Failed to inject baggage in format: '{0}', baggage: '{1}'.", Level = EventLevel.Warning)]
+        // [Event(11, Message = "Failed to inject baggage in format: '{0}', baggage: '{1}'.", Level = EventLevel.Warning)]
         public void FailedToInjectBaggage(string format, string error)
         {
-            this.WriteEvent(11, format, error);
+            this.WriteEvent(EventLevel.Warning, 11, "Failed to inject baggage in format: '{0}', baggage: '{1}'.", format, error);
         }
     }
 }

@@ -14,7 +14,7 @@
 // limitations under the License.
 // </copyright>
 
-#if !XAMARIN
+#if XAMARIN
 
 using System;
 using System.Diagnostics.Tracing;
@@ -22,9 +22,10 @@ using OpenTelemetry.Internal;
 
 namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation
 {
-    [EventSource(Name = "OpenTelemetry-Exporter-OpenTelemetryProtocol")]
-    internal class OpenTelemetryProtocolExporterEventSource : EventSource
+    internal class OpenTelemetryProtocolExporterEventSource : SelfLogBase
     {
+        protected override string Source => "OpenTelemetry-Exporter-OpenTelemetryProtocol";
+
         public static readonly OpenTelemetryProtocolExporterEventSource Log = new OpenTelemetryProtocolExporterEventSource();
 
         [NonEvent]
@@ -49,37 +50,37 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation
         [Event(2, Message = "Exporter failed send data to collector to {0} endpoint. Data will not be sent. Exception: {1}", Level = EventLevel.Error)]
         public void FailedToReachCollector(string rawCollectorUri, string ex)
         {
-            this.WriteEvent(2, rawCollectorUri, ex);
+            this.WriteEvent(EventLevel.Error, 2, "Exporter failed send data to collector to {0} endpoint. Data will not be sent. Exception: {1}", rawCollectorUri, ex);
         }
 
         [Event(3, Message = "Could not translate activity from class '{0}' and method '{1}', span will not be recorded.", Level = EventLevel.Informational)]
         public void CouldNotTranslateActivity(string className, string methodName)
         {
-            this.WriteEvent(3, className, methodName);
+            this.WriteEvent(EventLevel.Informational, 3, "Could not translate activity from class '{0}' and method '{1}', span will not be recorded.", className, methodName);
         }
 
         [Event(4, Message = "Unknown error in export method: {0}", Level = EventLevel.Error)]
         public void ExportMethodException(string ex)
         {
-            this.WriteEvent(4, ex);
+            this.WriteEvent(EventLevel.Error, 4, "Unknown error in export method: {0}", ex);
         }
 
         [Event(5, Message = "Could not translate metric from class '{0}' and method '{1}', metric will not be recorded.", Level = EventLevel.Informational)]
         public void CouldNotTranslateMetric(string className, string methodName)
         {
-            this.WriteEvent(5, className, methodName);
+            this.WriteEvent(EventLevel.Informational, 5, "Could not translate metric from class '{0}' and method '{1}', metric will not be recorded.", className, methodName);
         }
 
         [Event(8, Message = "Unsupported value for protocol '{0}' is configured, default protocol 'grpc' will be used.", Level = EventLevel.Warning)]
         public void UnsupportedProtocol(string protocol)
         {
-            this.WriteEvent(8, protocol);
+            this.WriteEvent(EventLevel.Warning, 8, "Unsupported value for protocol '{0}' is configured, default protocol 'grpc' will be used.", protocol);
         }
 
         [Event(9, Message = "Could not translate LogRecord from class '{0}' and method '{1}', log will not be exported.", Level = EventLevel.Informational)]
         public void CouldNotTranslateLogRecord(string className, string methodName)
         {
-            this.WriteEvent(9, className, methodName);
+            this.WriteEvent(EventLevel.Informational, 9, "Could not translate LogRecord from class '{0}' and method '{1}', log will not be exported.", className, methodName);
         }
     }
 }
