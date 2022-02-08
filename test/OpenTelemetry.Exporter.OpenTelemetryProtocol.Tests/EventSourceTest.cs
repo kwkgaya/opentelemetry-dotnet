@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // </copyright>
-
+#if !XAMARIN
 using OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation;
 using OpenTelemetry.Tests;
 using Xunit;
@@ -29,3 +29,4 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
         }
     }
 }
+#endif

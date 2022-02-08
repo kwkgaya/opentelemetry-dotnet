@@ -17,24 +17,57 @@
 #if XAMARIN
 using System;
 using System.Diagnostics.Tracing;
+using System.Linq;
+using System.Reflection;
 
 namespace OpenTelemetry.Internal
 {
     public class SelfLogBase
     {
-        public static Action<EventLevel, string> Listener;
+        // TODO: Register listners in a better way
+        public static Action<string> Listener;
 
-        protected virtual string Source { get; }
+        private Lazy<string> sourceLazy;
 
-        protected void WriteEvent(EventLevel level, int eventId, string message, params object[] args)
+        protected SelfLogBase()
         {
-            var log = $"Source: {Source}\n EventId: {eventId}\n {string.Format(message, args)}";
-            Listener?.Invoke(level, log);
+            this.sourceLazy = new Lazy<string>(() => GetSource());
         }
 
-        protected bool IsEnabled(EventLevel warning, EventKeywords all)
+        protected virtual string Source => sourceLazy.Value;
+
+        protected void WriteEvent(int eventId, params object[] args)
+        {
+            try
+            {
+                // TODO: Does this work on mono?
+                // If not, we can use caller information, but then cannot use the params argument
+                var method = new System.Diagnostics.StackTrace().GetFrame(1).GetMethod();
+                var @event = GetEventAttribute(method);
+                var log = $"Source: {this.Source}\n EventId: {@event.EventId}\n Level: {@event.Level}\n {string.Format(@event.Message, args)}\n\n";
+                Listener?.Invoke(log);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        protected bool IsEnabled(EventLevel level, EventKeywords keywords)
         {
             return true;
+        }
+
+        private string GetSource()
+        {
+            var eventSource = (EventSourceAttribute)this.GetType().GetCustomAttributes(typeof(EventSourceAttribute), false).Single();
+            return eventSource.Name;
+        }
+
+        // Todo: Use a cache dictinary with eventId as key?
+        private static EventAttribute GetEventAttribute(MethodBase eventMethod)
+        {
+            return (EventAttribute)eventMethod.GetCustomAttributes(typeof(EventAttribute), false).Single();
         }
     }
 }

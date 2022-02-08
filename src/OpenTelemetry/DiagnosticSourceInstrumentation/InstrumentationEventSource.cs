@@ -24,7 +24,11 @@ namespace OpenTelemetry.Instrumentation
     /// EventSource events emitted from the project.
     /// </summary>
     [EventSource(Name = "OpenTelemetry-Instrumentation")]
+#if XAMARIN
+    internal class InstrumentationEventSource : SelfLogBase
+#else
     internal class InstrumentationEventSource : EventSource
+#endif
     {
         public static InstrumentationEventSource Log = new InstrumentationEventSource();
 

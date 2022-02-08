@@ -16,6 +16,7 @@
 
 using CommandLine;
 using OpenTelemetry.Exporter;
+using OpenTelemetry.Internal;
 
 namespace Examples.Console
 {
@@ -43,6 +44,8 @@ namespace Examples.Console
         /// <param name="args">Arguments from command line.</param>
         public static void Main(string[] args)
         {
+            SelfLogBase.Listener = new System.Action<string>(Log);
+
             Parser.Default.ParseArguments<JaegerOptions, ZipkinOptions, PrometheusOptions, MetricsOptions, LogsOptions, GrpcNetClientOptions, HttpClientOptions, RedisOptions, ZPagesOptions, ConsoleOptions, OpenTelemetryShimOptions, OpenTracingShimOptions, OtlpOptions, InMemoryOptions>(args)
                 .MapResult(
                     (JaegerOptions options) => TestJaegerExporter.Run(options.Host, options.Port),
@@ -60,6 +63,11 @@ namespace Examples.Console
                     (OtlpOptions options) => TestOtlpExporter.Run(options.Endpoint, options.Protocol),
                     (InMemoryOptions options) => TestInMemoryExporter.Run(options),
                     errs => 1);
+        }
+
+        private static void Log(string message)
+        {
+            System.Console.WriteLine(message);
         }
     }
 

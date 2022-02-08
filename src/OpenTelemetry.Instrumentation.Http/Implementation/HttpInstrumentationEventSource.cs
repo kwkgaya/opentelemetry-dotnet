@@ -24,7 +24,11 @@ namespace OpenTelemetry.Instrumentation.Http.Implementation
     /// EventSource events emitted from the project.
     /// </summary>
     [EventSource(Name = "OpenTelemetry-Instrumentation-Http")]
+#if XAMARIN
+    internal class HttpInstrumentationEventSource : SelfLogBase
+#else
     internal class HttpInstrumentationEventSource : EventSource
+#endif
     {
         public static HttpInstrumentationEventSource Log = new HttpInstrumentationEventSource();
 
