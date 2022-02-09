@@ -25,6 +25,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 [Ll]og/
+[Oo]utput/
 
 # DocFx output
 _api/
