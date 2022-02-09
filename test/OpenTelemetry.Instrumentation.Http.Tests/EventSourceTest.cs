@@ -14,6 +14,7 @@
 // limitations under the License.
 // </copyright>
 
+#if !XAMARIN
 using OpenTelemetry.Instrumentation.Http.Implementation;
 using OpenTelemetry.Tests;
 using Xunit;
@@ -29,3 +30,4 @@ namespace OpenTelemetry.Instrumentation.Http.Tests
         }
     }
 }
+#endif
