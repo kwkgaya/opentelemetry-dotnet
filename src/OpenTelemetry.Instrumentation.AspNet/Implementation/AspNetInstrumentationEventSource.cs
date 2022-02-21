@@ -24,7 +24,11 @@ namespace OpenTelemetry.Instrumentation.AspNet.Implementation
     /// EventSource events emitted from the project.
     /// </summary>
     [EventSource(Name = "OpenTelemetry-Instrumentation-AspNet")]
+#if XAMARIN
+    internal class AspNetInstrumentationEventSource : SelfLogBase
+#else
     internal sealed class AspNetInstrumentationEventSource : EventSource
+#endif
     {
         public static AspNetInstrumentationEventSource Log = new AspNetInstrumentationEventSource();
 

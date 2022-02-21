@@ -25,7 +25,7 @@ namespace OpenTelemetry.Internal
     public class SelfLogBase
     {
         // TODO: Register listners in a better way
-        public static Action<string> Listener;
+        public static Action<SelfLogEventArgs> Listener;
 
         private Lazy<string> sourceLazy;
 
@@ -44,8 +44,9 @@ namespace OpenTelemetry.Internal
                 // If not, we can use caller information, but then cannot use the params argument
                 var method = new System.Diagnostics.StackTrace().GetFrame(1).GetMethod();
                 var @event = GetEventAttribute(method);
-                var log = $"Source: {this.Source}\n EventId: {@event.EventId}\n Level: {@event.Level}\n {string.Format(@event.Message, args)}\n\n";
-                Listener?.Invoke(log);
+                var log = string.Format(@event.Message, args);
+                var eventData = new SelfLogEventArgs() { EventId = @event.EventId, EventSource = this.GetType().Name, Level = @event.Level, Message = log };
+                Listener?.Invoke(eventData);
             }
             catch (Exception)
             {
@@ -69,6 +70,14 @@ namespace OpenTelemetry.Internal
         {
             return (EventAttribute)eventMethod.GetCustomAttributes(typeof(EventAttribute), false).Single();
         }
+    }
+
+    public class SelfLogEventArgs : System.EventArgs
+    {
+        public int EventId { get; set; }
+        public string EventSource { get; set; }
+        public EventLevel Level { get; set; }
+        public string Message { get; set; }
     }
 }
 #endif

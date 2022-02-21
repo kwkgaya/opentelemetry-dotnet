@@ -16,11 +16,29 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
+using OpenTelemetry.Internal;
 
 namespace OpenTelemetry.Tests
 {
     internal class InMemoryEventListener : EventListener
     {
+#if XAMARIN
+        public ConcurrentQueue<SelfLogEventArgs> Events = new ConcurrentQueue<SelfLogEventArgs>();
+
+        public InMemoryEventListener(SelfLogBase selfLogBase, EventLevel minLevel = EventLevel.Verbose)
+        {
+            SelfLogBase.Listener = this.HandleEvent;
+        }
+
+        private void HandleEvent(SelfLogEventArgs eventData)
+        {
+            this.Events.Enqueue(eventData);
+        }
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+        }
+#else
         public ConcurrentQueue<EventWrittenEventArgs> Events = new ConcurrentQueue<EventWrittenEventArgs>();
 
         public InMemoryEventListener(EventSource eventSource, EventLevel minLevel = EventLevel.Verbose)
@@ -32,5 +50,6 @@ namespace OpenTelemetry.Tests
         {
             this.Events.Enqueue(eventData);
         }
-    }
+#endif
+        }
 }

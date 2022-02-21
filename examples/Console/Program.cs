@@ -44,7 +44,7 @@ namespace Examples.Console
         /// <param name="args">Arguments from command line.</param>
         public static void Main(string[] args)
         {
-            SelfLogBase.Listener = new System.Action<string>(Log);
+            SelfLogBase.Listener = new System.Action<SelfLogEventArgs>(Log);
 
             Parser.Default.ParseArguments<JaegerOptions, ZipkinOptions, PrometheusOptions, MetricsOptions, LogsOptions, GrpcNetClientOptions, HttpClientOptions, RedisOptions, ZPagesOptions, ConsoleOptions, OpenTelemetryShimOptions, OpenTracingShimOptions, OtlpOptions, InMemoryOptions>(args)
                 .MapResult(
@@ -65,9 +65,10 @@ namespace Examples.Console
                     errs => 1);
         }
 
-        private static void Log(string message)
+        private static void Log(SelfLogEventArgs @event)
         {
-            System.Console.WriteLine(message);
+            var log = $"Source: {@event.EventSource}\n EventId: {@event.EventId}\n Level: {@event.Level}\n {@event.Message}\n\n";
+            System.Console.WriteLine(log);
         }
     }
 

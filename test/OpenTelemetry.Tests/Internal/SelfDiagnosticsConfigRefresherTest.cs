@@ -61,6 +61,7 @@ namespace OpenTelemetry.Internal.Tests
             }
         }
 
+#if !XAMARIN
         [Fact]
         public void SelfDiagnosticsConfigRefresher_CaptureAsConfigured()
         {
@@ -88,6 +89,7 @@ namespace OpenTelemetry.Internal.Tests
                 CleanupConfigFile();
             }
         }
+#endif
 
         private static string ParseLogMessage(string logLine)
         {
