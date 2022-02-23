@@ -42,8 +42,8 @@ namespace OpenTelemetry.Metrics
         /// </remarks>
         public static bool ForceFlush(this MeterProvider provider, int timeoutMilliseconds = Timeout.Infinite)
         {
-            Guard.Null(provider, nameof(provider));
-            Guard.InvalidTimeout(timeoutMilliseconds, nameof(timeoutMilliseconds));
+            Guard.ThrowIfNull(provider);
+            Guard.ThrowIfInvalidTimeout(timeoutMilliseconds);
 
             if (provider is MeterProviderSdk meterProviderSdk)
             {
@@ -51,10 +51,9 @@ namespace OpenTelemetry.Metrics
                 {
                     return meterProviderSdk.OnForceFlush(timeoutMilliseconds);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // TODO: what event source do we use?
-                    // OpenTelemetrySdkEventSource.Log.MeterProviderException(nameof(meterProviderSdk.OnForceFlush), ex);
+                    OpenTelemetrySdkEventSource.Log.MeterProviderException(nameof(meterProviderSdk.OnForceFlush), ex);
                     return false;
                 }
             }
@@ -83,8 +82,8 @@ namespace OpenTelemetry.Metrics
         /// </remarks>
         public static bool Shutdown(this MeterProvider provider, int timeoutMilliseconds = Timeout.Infinite)
         {
-            Guard.Null(provider, nameof(provider));
-            Guard.InvalidTimeout(timeoutMilliseconds, nameof(timeoutMilliseconds));
+            Guard.ThrowIfNull(provider);
+            Guard.ThrowIfInvalidTimeout(timeoutMilliseconds);
 
             if (provider is MeterProviderSdk meterProviderSdk)
             {
@@ -97,10 +96,9 @@ namespace OpenTelemetry.Metrics
                 {
                     return meterProviderSdk.OnShutdown(timeoutMilliseconds);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    // TODO: what event source do we use?
-                    // OpenTelemetrySdkEventSource.Log.MeterProviderException(nameof(meterProviderSdk.OnShutdown), ex);
+                    OpenTelemetrySdkEventSource.Log.MeterProviderException(nameof(meterProviderSdk.OnShutdown), ex);
                     return false;
                 }
             }

@@ -40,8 +40,8 @@ take precedence over the environment variables.
   instance that will be used at runtime to transmit spans over HTTP. See
   [Configure HttpClient](#configure-httpclient) for more details.
 
-* `MaxPayloadSizeInBytes`: Maximum payload size - for .NET versions **other**
-   than 4.5.2 (default 4096).
+* `MaxPayloadSizeInBytes`: Maximum payload size of UTF8 JSON chunks sent to
+  Zipkin (default 4096).
 
 * `ServiceName`: Name of the service reporting telemetry. If the `Resource`
    associated with the telemetry has "service.name" defined, then it'll be
@@ -106,6 +106,14 @@ services.AddHttpClient(
 
 Note: The single instance returned by `HttpClientFactory` is reused by all
 export requests.
+
+## Troubleshooting
+
+This component uses an
+[EventSource](https://docs.microsoft.com/dotnet/api/system.diagnostics.tracing.eventsource)
+with the name "OpenTelemetry-Exporter-Zipkin" for its internal logging. Please
+refer to [SDK troubleshooting](../opentelemetry/README.md#troubleshooting) for
+instructions on seeing these internal logs.
 
 ## References
 

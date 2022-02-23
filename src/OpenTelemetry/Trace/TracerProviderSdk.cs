@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
 using OpenTelemetry.Internal;
 using OpenTelemetry.Resources;
 
@@ -43,20 +42,20 @@ namespace OpenTelemetry.Trace
             IEnumerable<TracerProviderBuilderBase.InstrumentationFactory> instrumentationFactories,
             Sampler sampler,
             List<BaseProcessor<Activity>> processors,
-            Dictionary<string, bool> legacyActivityOperationNames)
+            HashSet<string> legacyActivityOperationNames)
         {
             this.Resource = resource;
             this.sampler = sampler;
             this.supportLegacyActivity = legacyActivityOperationNames.Count > 0;
 
             bool legacyActivityWildcardMode = false;
-            Regex legacyActivityWildcardModeRegex = null;
+            var legacyActivityWildcardModeRegex = WildcardHelper.GetWildcardRegex();
             foreach (var legacyName in legacyActivityOperationNames)
             {
-                if (legacyName.Key.Contains('*'))
+                if (WildcardHelper.ContainsWildcard(legacyName))
                 {
                     legacyActivityWildcardMode = true;
-                    legacyActivityWildcardModeRegex = GetWildcardRegex(legacyActivityOperationNames.Keys);
+                    legacyActivityWildcardModeRegex = WildcardHelper.GetWildcardRegex(legacyActivityOperationNames);
                     break;
                 }
             }
@@ -85,7 +84,7 @@ namespace OpenTelemetry.Trace
                 }
                 else
                 {
-                    legacyActivityPredicate = activity => legacyActivityOperationNames.ContainsKey(activity.OperationName);
+                    legacyActivityPredicate = activity => legacyActivityOperationNames.Contains(activity.OperationName);
                 }
 
                 listener.ActivityStarted = activity =>
@@ -211,27 +210,15 @@ namespace OpenTelemetry.Trace
                 this.getRequestedDataAction = this.RunGetRequestedDataOtherSampler;
             }
 
+            // Sources can be null. This happens when user
+            // is only interested in InstrumentationLibraries
+            // which do not depend on ActivitySources.
             if (sources.Any())
             {
-                // Sources can be null. This happens when user
-                // is only interested in InstrumentationLibraries
-                // which do not depend on ActivitySources.
-
-                var wildcardMode = false;
-
                 // Validation of source name is already done in builder.
-                foreach (var name in sources)
+                if (sources.Any(s => WildcardHelper.ContainsWildcard(s)))
                 {
-                    if (name.Contains('*'))
-                    {
-                        wildcardMode = true;
-                        break;
-                    }
-                }
-
-                if (wildcardMode)
-                {
-                    var regex = GetWildcardRegex(sources);
+                    var regex = WildcardHelper.GetWildcardRegex(sources);
 
                     // Function which takes ActivitySource and returns true/false to indicate if it should be subscribed to
                     // or not.
@@ -242,12 +229,7 @@ namespace OpenTelemetry.Trace
                 }
                 else
                 {
-                    var activitySources = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                    foreach (var name in sources)
-                    {
-                        activitySources.Add(name);
-                    }
+                    var activitySources = new HashSet<string>(sources, StringComparer.OrdinalIgnoreCase);
 
                     if (this.supportLegacyActivity)
                     {
@@ -269,12 +251,6 @@ namespace OpenTelemetry.Trace
 
             ActivitySource.AddActivityListener(listener);
             this.listener = listener;
-
-            Regex GetWildcardRegex(IEnumerable<string> collection)
-            {
-                var pattern = '^' + string.Join("|", from name in collection select "(?:" + Regex.Escape(name).Replace("\\*", ".*") + ')') + '$';
-                return new Regex(pattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            }
         }
 
         internal Resource Resource { get; }
@@ -287,7 +263,7 @@ namespace OpenTelemetry.Trace
 
         internal TracerProviderSdk AddProcessor(BaseProcessor<Activity> processor)
         {
-            Guard.Null(processor, nameof(processor));
+            Guard.ThrowIfNull(processor);
 
             processor.SetParentProvider(this);
 
@@ -380,6 +356,7 @@ namespace OpenTelemetry.Trace
                 }
 
                 this.disposed = true;
+                OpenTelemetrySdkEventSource.Log.ProviderDisposed(nameof(TracerProvider));
             }
 
             base.Dispose(disposing);

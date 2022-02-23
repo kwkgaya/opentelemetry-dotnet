@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation;
@@ -27,7 +26,6 @@ using OpenTelemetry.Resources;
 using OpenTelemetry.Tests;
 using OpenTelemetry.Trace;
 using Xunit;
-using GrpcCore = Grpc.Core;
 using OtlpCollector = Opentelemetry.Proto.Collector.Trace.V1;
 using OtlpCommon = Opentelemetry.Proto.Common.V1;
 using OtlpTrace = Opentelemetry.Proto.Trace.V1;
@@ -35,7 +33,7 @@ using Status = OpenTelemetry.Trace.Status;
 
 namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
 {
-    public class OtlpTraceExporterTests
+    public class OtlpTraceExporterTests : Http2UnencryptedSupportTests
     {
         static OtlpTraceExporterTests()
         {
@@ -372,6 +370,14 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
         [Fact]
         public void UseOpenTelemetryProtocolActivityExporterWithCustomActivityProcessor()
         {
+            if (Environment.Version.Major == 3)
+            {
+                // Adding the OtlpExporter creates a GrpcChannel.
+                // This switch must be set before creating a GrpcChannel when calling an insecure HTTP/2 endpoint.
+                // See: https://docs.microsoft.com/aspnet/core/grpc/troubleshoot#call-insecure-grpc-services-with-net-core-client
+                AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true);
+            }
+
             const string ActivitySourceName = "otlp.test";
             TestActivityProcessor testActivityProcessor = new TestActivityProcessor();
 
@@ -414,14 +420,6 @@ namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Tests
             var result = exporter.Shutdown();
 
             exportClientMock.Verify(m => m.Shutdown(It.IsAny<int>()), Times.Once());
-        }
-
-        private class NoopTraceServiceClient : OtlpCollector.TraceService.ITraceServiceClient
-        {
-            public OtlpCollector.ExportTraceServiceResponse Export(OtlpCollector.ExportTraceServiceRequest request, GrpcCore.Metadata headers = null, DateTime? deadline = null, CancellationToken cancellationToken = default)
-            {
-                return null;
-            }
         }
     }
 }

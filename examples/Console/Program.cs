@@ -15,7 +15,6 @@
 // </copyright>
 
 using CommandLine;
-using OpenTelemetry.Exporter;
 using OpenTelemetry.Internal;
 
 namespace Examples.Console

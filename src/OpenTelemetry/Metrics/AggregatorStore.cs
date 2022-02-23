@@ -19,21 +19,22 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using OpenTelemetry.Internal;
 
 namespace OpenTelemetry.Metrics
 {
     internal sealed class AggregatorStore
     {
-        private static readonly ObjectArrayEqualityComparer ObjectArrayComparer = new ObjectArrayEqualityComparer();
         private readonly object lockZeroTags = new object();
         private readonly HashSet<string> tagKeysInteresting;
         private readonly int tagsKeysInterestingCount;
 
-        // Two-Level lookup. TagKeys x [ TagValues x Metrics ]
-        private readonly ConcurrentDictionary<string[], ConcurrentDictionary<object[], int>> keyValue2MetricAggs =
-            new ConcurrentDictionary<string[], ConcurrentDictionary<object[], int>>(new StringArrayEqualityComparer());
+        private readonly ConcurrentDictionary<Tags, int> tagsToMetricPointIndexDictionary =
+            new ConcurrentDictionary<Tags, int>();
 
         private readonly AggregationTemporality temporality;
+        private readonly string name;
+        private readonly string metricPointCapHitMessage;
         private readonly bool outputDelta;
         private readonly MetricPoint[] metricPoints;
         private readonly int[] currentMetricPointBatch;
@@ -44,18 +45,22 @@ namespace OpenTelemetry.Metrics
         private readonly int maxMetricPoints;
         private int metricPointIndex = 0;
         private int batchSize = 0;
+        private int metricCapHitMessageLogged;
         private bool zeroTagMetricPointInitialized;
         private DateTimeOffset startTimeExclusive;
         private DateTimeOffset endTimeInclusive;
 
         internal AggregatorStore(
+            string name,
             AggregationType aggType,
             AggregationTemporality temporality,
             int maxMetricPoints,
             double[] histogramBounds,
             string[] tagKeysInteresting = null)
         {
+            this.name = name;
             this.maxMetricPoints = maxMetricPoints;
+            this.metricPointCapHitMessage = $"Maximum MetricPoints limit reached for this Metric stream. Configured limit: {this.maxMetricPoints}";
             this.metricPoints = new MetricPoint[maxMetricPoints];
             this.currentMetricPointBatch = new int[maxMetricPoints];
             this.aggType = aggType;
@@ -72,12 +77,7 @@ namespace OpenTelemetry.Metrics
             {
                 this.updateLongCallback = this.UpdateLongCustomTags;
                 this.updateDoubleCallback = this.UpdateDoubleCustomTags;
-                var hs = new HashSet<string>(StringComparer.Ordinal);
-                foreach (var key in tagKeysInteresting)
-                {
-                    hs.Add(key);
-                }
-
+                var hs = new HashSet<string>(tagKeysInteresting, StringComparer.Ordinal);
                 this.tagKeysInteresting = hs;
                 this.tagsKeysInterestingCount = hs.Count;
             }
@@ -176,44 +176,37 @@ namespace OpenTelemetry.Metrics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int LookupAggregatorStore(string[] tagKeys, object[] tagValues, int length)
         {
-            int aggregatorIndex;
-            string[] seqKey = null;
+            var givenTags = new Tags(tagKeys, tagValues);
 
-            // GetOrAdd by TagKeys at 1st Level of 2-level dictionary structure.
-            // Get back a Dictionary of [ Values x Metrics[] ].
-            if (!this.keyValue2MetricAggs.TryGetValue(tagKeys, out var value2metrics))
+            if (!this.tagsToMetricPointIndexDictionary.TryGetValue(givenTags, out var aggregatorIndex))
             {
-                // Note: We are using storage from ThreadStatic, so need to make a deep copy for Dictionary storage.
-                seqKey = new string[length];
-                tagKeys.CopyTo(seqKey, 0);
-
-                value2metrics = new ConcurrentDictionary<object[], int>(ObjectArrayComparer);
-                if (!this.keyValue2MetricAggs.TryAdd(seqKey, value2metrics))
+                if (length > 1)
                 {
-                    this.keyValue2MetricAggs.TryGetValue(seqKey, out value2metrics);
-                }
-            }
+                    // Note: We are using storage from ThreadStatic, so need to make a deep copy for Dictionary storage.
+                    // Create a new array for the sorted Tag keys.
+                    var sortedTagKeys = new string[length];
+                    tagKeys.CopyTo(sortedTagKeys, 0);
 
-            // GetOrAdd by TagValues at 2st Level of 2-level dictionary structure.
-            // Get back Metrics[].
-            if (!value2metrics.TryGetValue(tagValues, out aggregatorIndex))
-            {
-                aggregatorIndex = this.metricPointIndex;
-                if (aggregatorIndex >= this.maxMetricPoints)
-                {
-                    // sorry! out of data points.
-                    // TODO: Once we support cleanup of
-                    // unused points (typically with delta)
-                    // we can re-claim them here.
-                    return -1;
-                }
+                    // Create a new array for the sorted Tag values.
+                    var sortedTagValues = new object[length];
+                    tagValues.CopyTo(sortedTagValues, 0);
 
-                lock (value2metrics)
-                {
-                    // check again after acquiring lock.
-                    if (!value2metrics.TryGetValue(tagValues, out aggregatorIndex))
+                    Array.Sort(sortedTagKeys, sortedTagValues);
+
+                    var sortedTags = new Tags(sortedTagKeys, sortedTagValues);
+
+                    if (!this.tagsToMetricPointIndexDictionary.TryGetValue(sortedTags, out aggregatorIndex))
                     {
-                        aggregatorIndex = Interlocked.Increment(ref this.metricPointIndex);
+                        // Note: We are using storage from ThreadStatic, so need to make a deep copy for Dictionary storage.
+                        var givenKeys = new string[length];
+                        tagKeys.CopyTo(givenKeys, 0);
+
+                        var givenValues = new object[length];
+                        tagValues.CopyTo(givenValues, 0);
+
+                        givenTags = new Tags(givenKeys, givenValues);
+
+                        aggregatorIndex = this.metricPointIndex;
                         if (aggregatorIndex >= this.maxMetricPoints)
                         {
                             // sorry! out of data points.
@@ -223,24 +216,83 @@ namespace OpenTelemetry.Metrics
                             return -1;
                         }
 
-                        // Note: We are using storage from ThreadStatic, so need to make a deep copy for Dictionary storage.
-                        if (seqKey == null)
+                        lock (this.tagsToMetricPointIndexDictionary)
                         {
-                            seqKey = new string[length];
-                            tagKeys.CopyTo(seqKey, 0);
+                            // check again after acquiring lock.
+                            if (!this.tagsToMetricPointIndexDictionary.TryGetValue(sortedTags, out aggregatorIndex))
+                            {
+                                aggregatorIndex = ++this.metricPointIndex;
+                                if (aggregatorIndex >= this.maxMetricPoints)
+                                {
+                                    // sorry! out of data points.
+                                    // TODO: Once we support cleanup of
+                                    // unused points (typically with delta)
+                                    // we can re-claim them here.
+                                    return -1;
+                                }
+
+                                ref var metricPoint = ref this.metricPoints[aggregatorIndex];
+                                var dt = DateTimeOffset.UtcNow;
+                                metricPoint = new MetricPoint(this.aggType, dt, sortedTags.Keys, sortedTags.Values, this.histogramBounds);
+
+                                // Add to dictionary *after* initializing MetricPoint
+                                // as other threads can start writing to the
+                                // MetricPoint, if dictionary entry found.
+
+                                // Add the sorted order along with the given order of tags
+                                this.tagsToMetricPointIndexDictionary.TryAdd(sortedTags, aggregatorIndex);
+                                this.tagsToMetricPointIndexDictionary.TryAdd(givenTags, aggregatorIndex);
+                            }
                         }
+                    }
+                }
+                else
+                {
+                    // Note: We are using storage from ThreadStatic, so need to make a deep copy for Dictionary storage.
+                    var givenKeys = new string[length];
+                    var givenValues = new object[length];
 
-                        var seqVal = new object[length];
-                        tagValues.CopyTo(seqVal, 0);
+                    tagKeys.CopyTo(givenKeys, 0);
+                    tagValues.CopyTo(givenValues, 0);
 
-                        ref var metricPoint = ref this.metricPoints[aggregatorIndex];
-                        var dt = DateTimeOffset.UtcNow;
-                        metricPoint = new MetricPoint(this.aggType, dt, seqKey, seqVal, this.histogramBounds);
+                    givenTags = new Tags(givenKeys, givenValues);
 
-                        // Add to dictionary *after* initializing MetricPoint
-                        // as other threads can start writing to the
-                        // MetricPoint, if dictionary entry found.
-                        value2metrics.TryAdd(seqVal, aggregatorIndex);
+                    aggregatorIndex = this.metricPointIndex;
+                    if (aggregatorIndex >= this.maxMetricPoints)
+                    {
+                        // sorry! out of data points.
+                        // TODO: Once we support cleanup of
+                        // unused points (typically with delta)
+                        // we can re-claim them here.
+                        return -1;
+                    }
+
+                    lock (this.tagsToMetricPointIndexDictionary)
+                    {
+                        // check again after acquiring lock.
+                        if (!this.tagsToMetricPointIndexDictionary.TryGetValue(givenTags, out aggregatorIndex))
+                        {
+                            aggregatorIndex = ++this.metricPointIndex;
+                            if (aggregatorIndex >= this.maxMetricPoints)
+                            {
+                                // sorry! out of data points.
+                                // TODO: Once we support cleanup of
+                                // unused points (typically with delta)
+                                // we can re-claim them here.
+                                return -1;
+                            }
+
+                            ref var metricPoint = ref this.metricPoints[aggregatorIndex];
+                            var dt = DateTimeOffset.UtcNow;
+                            metricPoint = new MetricPoint(this.aggType, dt, givenTags.Keys, givenTags.Values, this.histogramBounds);
+
+                            // Add to dictionary *after* initializing MetricPoint
+                            // as other threads can start writing to the
+                            // MetricPoint, if dictionary entry found.
+
+                            // givenTags will always be sorted when tags length == 1
+                            this.tagsToMetricPointIndexDictionary.TryAdd(givenTags, aggregatorIndex);
+                        }
                     }
                 }
             }
@@ -255,7 +307,11 @@ namespace OpenTelemetry.Metrics
                 var index = this.FindMetricAggregatorsDefault(tags);
                 if (index < 0)
                 {
-                    // TODO: Measurement dropped due to MemoryPoint cap hit.
+                    if (Interlocked.CompareExchange(ref this.metricCapHitMessageLogged, 1, 0) == 0)
+                    {
+                        OpenTelemetrySdkEventSource.Log.MeasurementDropped(this.name, this.metricPointCapHitMessage, "Modify instrumentation to reduce the number of unique key/value pair combinations. Or use MeterProviderBuilder.SetMaxMetricPointsPerMetricStream to set higher limit.");
+                    }
+
                     return;
                 }
 
@@ -263,7 +319,7 @@ namespace OpenTelemetry.Metrics
             }
             catch (Exception)
             {
-                // TODO: Measurement dropped due to internal exception.
+                OpenTelemetrySdkEventSource.Log.MeasurementDropped(this.name, "SDK internal error occurred.", "Contact SDK owners.");
             }
         }
 
@@ -274,7 +330,11 @@ namespace OpenTelemetry.Metrics
                 var index = this.FindMetricAggregatorsCustomTag(tags);
                 if (index < 0)
                 {
-                    // TODO: Measurement dropped due to MemoryPoint cap hit.
+                    if (Interlocked.CompareExchange(ref this.metricCapHitMessageLogged, 1, 0) == 0)
+                    {
+                        OpenTelemetrySdkEventSource.Log.MeasurementDropped(this.name, this.metricPointCapHitMessage, "Modify instrumentation to reduce the number of unique key/value pair combinations. Or use MeterProviderBuilder.SetMaxMetricPointsPerMetricStream to set higher limit.");
+                    }
+
                     return;
                 }
 
@@ -282,7 +342,7 @@ namespace OpenTelemetry.Metrics
             }
             catch (Exception)
             {
-                // TODO: Measurement dropped due to internal exception.
+                OpenTelemetrySdkEventSource.Log.MeasurementDropped(this.name, "SDK internal error occurred.", "Contact SDK owners.");
             }
         }
 
@@ -293,7 +353,11 @@ namespace OpenTelemetry.Metrics
                 var index = this.FindMetricAggregatorsDefault(tags);
                 if (index < 0)
                 {
-                    // TODO: Measurement dropped due to MemoryPoint cap hit.
+                    if (Interlocked.CompareExchange(ref this.metricCapHitMessageLogged, 1, 0) == 0)
+                    {
+                        OpenTelemetrySdkEventSource.Log.MeasurementDropped(this.name, this.metricPointCapHitMessage, "Modify instrumentation to reduce the number of unique key/value pair combinations. Or use MeterProviderBuilder.SetMaxMetricPointsPerMetricStream to set higher limit.");
+                    }
+
                     return;
                 }
 
@@ -301,7 +365,7 @@ namespace OpenTelemetry.Metrics
             }
             catch (Exception)
             {
-                // TODO: Measurement dropped due to internal exception.
+                OpenTelemetrySdkEventSource.Log.MeasurementDropped(this.name, "SDK internal error occurred.", "Contact SDK owners.");
             }
         }
 
@@ -312,7 +376,11 @@ namespace OpenTelemetry.Metrics
                 var index = this.FindMetricAggregatorsCustomTag(tags);
                 if (index < 0)
                 {
-                    // TODO: Measurement dropped due to MemoryPoint cap hit.
+                    if (Interlocked.CompareExchange(ref this.metricCapHitMessageLogged, 1, 0) == 0)
+                    {
+                        OpenTelemetrySdkEventSource.Log.MeasurementDropped(this.name, this.metricPointCapHitMessage, "Modify instrumentation to reduce the number of unique key/value pair combinations. Or use MeterProviderBuilder.SetMaxMetricPointsPerMetricStream to set higher limit.");
+                    }
+
                     return;
                 }
 
@@ -320,7 +388,7 @@ namespace OpenTelemetry.Metrics
             }
             catch (Exception)
             {
-                // TODO: Measurement dropped due to internal exception.
+                OpenTelemetrySdkEventSource.Log.MeasurementDropped(this.name, "SDK internal error occurred.", "Contact SDK owners.");
             }
         }
 
@@ -336,11 +404,6 @@ namespace OpenTelemetry.Metrics
             var storage = ThreadStaticStorage.GetStorage();
 
             storage.SplitToKeysAndValues(tags, tagLength, out var tagKeys, out var tagValues);
-
-            if (tagLength > 1)
-            {
-                Array.Sort(tagKeys, tagValues);
-            }
 
             return this.LookupAggregatorStore(tagKeys, tagValues, tagLength);
         }
@@ -368,11 +431,6 @@ namespace OpenTelemetry.Metrics
             {
                 this.InitializeZeroTagPointIfNotInitialized();
                 return 0;
-            }
-
-            if (actualLength > 1)
-            {
-                Array.Sort(tagKeys, tagValues);
             }
 
             return this.LookupAggregatorStore(tagKeys, tagValues, actualLength);
