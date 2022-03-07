@@ -19,7 +19,6 @@ namespace Examples.XamarinFormsApp
         private const int ApplicationId = 2000;
         private static ActivitySource Source = new ActivitySource("MyMobileTest");
         private static IConfiguration configuration;
-
         static IDictionary<string, string> DefaultConfigurationStrings { get; } =
              new Dictionary<string, string>()
              {
@@ -118,7 +117,6 @@ namespace Examples.XamarinFormsApp
                                             var openTelemetryEndpoint =
                                                 config.GetValue<string>("diagnostics.exporter.opentelemetry.url");
                                             o.Endpoint = new Uri(openTelemetryEndpoint, UriKind.Absolute);
-                                            o.HttpClientHandler = App.httpClientHandler;
                                         });
                                     options.IncludeFormattedMessage = true;
                                     options.IncludeScopes = true;

@@ -120,8 +120,6 @@ namespace OpenTelemetry.Exporter
             }
         }
 
-        public HttpClientHandler HttpClientHandler { get; set; }
-
         /// <summary>
         /// Gets or sets optional headers for the connection. Refer to the <a href="https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/exporter.md#specifying-headers-via-environment-variables">
         /// specification</a> for information on the expected format for Headers.

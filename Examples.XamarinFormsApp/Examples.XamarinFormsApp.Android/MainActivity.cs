@@ -1,10 +1,9 @@
-using System;
+﻿using System;
 
 using Android.App;
 using Android.Content.PM;
 using Android.Runtime;
 using Android.OS;
-using Xamarin.Android.Net;
 
 namespace Examples.XamarinFormsApp.Droid
 {
@@ -13,8 +12,6 @@ namespace Examples.XamarinFormsApp.Droid
     {
         protected override void OnCreate(Bundle savedInstanceState)
         {
-            App.httpClientHandler = new AndroidClientHandler();
-
             base.OnCreate(savedInstanceState);
 
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
