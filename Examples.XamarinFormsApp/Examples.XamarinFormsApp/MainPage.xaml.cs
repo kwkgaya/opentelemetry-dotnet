@@ -19,7 +19,7 @@ namespace Examples.XamarinFormsApp
         private const int ApplicationId = 2000;
         private static ActivitySource Source = new ActivitySource("MyMobileTest");
         private static IConfiguration configuration;
-        static IReadOnlyDictionary<string, string> DefaultConfigurationStrings { get; } =
+        static IDictionary<string, string> DefaultConfigurationStrings { get; } =
              new Dictionary<string, string>()
              {
                  ["AllowedHosts"] = "*",
@@ -33,13 +33,6 @@ namespace Examples.XamarinFormsApp
         public MainPage()
         {
             InitializeComponent();
-            configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(DefaultConfigurationStrings)
-                .Build();
-
-            // This is needed because console applications does not have an hosting environment per default.
-            // In a hosted application(.net core web app, for instance, telemetry is started automatically on the hosted process)
-            Start(ApplicationId, "MobileSimulator", configuration);
         }
 
         private void Button_Clicked(object sender, EventArgs e)
@@ -57,7 +50,17 @@ namespace Examples.XamarinFormsApp
         }
 
         private async Task SendLogs()
-        { 
+        {
+            DefaultConfigurationStrings["diagnostics.exporter.opentelemetry.url"] = urlPicker.SelectedItem.ToString();
+
+            configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(DefaultConfigurationStrings)
+                .Build();
+
+            // This is needed because console applications does not have an hosting environment per default.
+            // In a hosted application(.net core web app, for instance, telemetry is started automatically on the hosted process)
+            Start(ApplicationId, "MobileSimulator", configuration);
+
             string rootId;
             var openTelemetryEndpoint = configuration.GetValue<string>("diagnostics.exporter.opentelemetry.url");
             var telemetryUri = new Uri(openTelemetryEndpoint, UriKind.Absolute);
