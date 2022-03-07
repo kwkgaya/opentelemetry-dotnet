@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Net.Http;
 using Xamarin.Forms;
 using Xamarin.Forms.Xaml;
 
@@ -6,6 +7,8 @@ namespace Examples.XamarinFormsApp
 {
     public partial class App : Application
     {
+
+        public static HttpClientHandler httpClientHandler;
         public App()
         {
             InitializeComponent();
