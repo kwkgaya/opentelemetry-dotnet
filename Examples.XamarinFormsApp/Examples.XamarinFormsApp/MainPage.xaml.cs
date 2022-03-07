@@ -26,7 +26,7 @@ namespace Examples.XamarinFormsApp
                  ["diagnostics.enabled"] = "false",
                  ["env"] = "XAMARIN-LogTest-Environment",
                  ["diagnostics.sources"] = "*",
-                 ["diagnostics.exporter.opentelemetry.url"] = "https://192.168.1.75:4318",
+                 ["diagnostics.exporter.opentelemetry.url"] = "https://sl-sy-otel2.creativesoftware.com:4318",
                  ["diagnostics.servicename"] = "MobileSimulator",
              };
 
