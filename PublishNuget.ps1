@@ -11,6 +11,7 @@ if (Test-Path 'output') {
   Remove-Item 'output' -Force -Recurse
 }
 
+dotnet restore
 dotnet build --configuration Release -p:Deterministic=true -p:BuildNumber=$BuildNumber
 dotnet pack OpenTelemetry.proj --configuration Release --no-build --output "output" 
 
