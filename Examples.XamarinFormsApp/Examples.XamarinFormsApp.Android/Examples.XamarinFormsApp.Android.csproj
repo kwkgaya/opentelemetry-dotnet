@@ -34,6 +34,10 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AndroidLinkMode>None</AndroidLinkMode>
+    <AotAssemblies>false</AotAssemblies>
+    <EnableLLVM>false</EnableLLVM>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <BundleAssemblies>false</BundleAssemblies>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -58,7 +62,7 @@
     <PackageReference Include="Grpc.Core">
       <Version>2.44.0</Version>
     </PackageReference>
-    <PackageReference Include="Grpc.Core.Api">
+    <PackageReference Include="Grpc.Core.Xamarin">
       <Version>2.44.0</Version>
     </PackageReference>
     <PackageReference Include="Grpc.Net.Client">
