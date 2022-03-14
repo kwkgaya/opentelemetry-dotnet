@@ -13,6 +13,7 @@ OpenTelemetry.Metrics.MeterProvider
 OpenTelemetry.Metrics.MeterProvider.MeterProvider() -> void
 OpenTelemetry.Metrics.MeterProviderBuilder
 OpenTelemetry.Metrics.MeterProviderBuilder.MeterProviderBuilder() -> void
+OpenTelemetry.SelfLogEventArgs
 static OpenTelemetry.Context.RuntimeContext.GetValue(string slotName) -> object
 static OpenTelemetry.Context.RuntimeContext.GetValue<T>(string slotName) -> T
 static OpenTelemetry.Context.RuntimeContext.SetValue(string slotName, object value) -> void

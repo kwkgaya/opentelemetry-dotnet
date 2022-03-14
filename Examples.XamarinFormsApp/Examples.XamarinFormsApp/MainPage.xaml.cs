@@ -7,7 +7,7 @@ using Microsoft.Extensions.Configuration;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using OpenTelemetry.Internal;
+using OpenTelemetry;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
