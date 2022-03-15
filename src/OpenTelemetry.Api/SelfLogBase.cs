@@ -30,13 +30,18 @@ namespace OpenTelemetry
 
         protected SelfLogBase()
         {
-            this.sourceLazy = new Lazy<string>(() => GetSource());
+            this.sourceLazy = new Lazy<string>(() => this.GetSource());
         }
 
         protected virtual string Source => sourceLazy.Value;
 
         protected void WriteEvent(int eventId, params object[] args)
         {
+            if (Listener == null)
+            {
+                return;
+            }
+
             try
             {
                 // TODO: Does this work on mono?
@@ -44,7 +49,7 @@ namespace OpenTelemetry
                 var method = new System.Diagnostics.StackTrace().GetFrame(1).GetMethod();
                 var @event = GetEventAttribute(method);
                 var log = string.Format(@event.Message, args);
-                var eventData = new SelfLogEventArgs() { EventId = @event.EventId, EventSource = this.GetType().Name, Level = @event.Level, Message = log };
+                var eventData = new SelfLogEventArgs() { EventId = @event.EventId, EventSource = this.Source, Level = @event.Level, Message = log };
                 Listener?.Invoke(eventData);
             }
             catch (Exception)
