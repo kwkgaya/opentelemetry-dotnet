@@ -29,7 +29,11 @@ namespace OpenTelemetry.Internal
     /// EventSource implementation for OpenTelemetry SDK implementation.
     /// </summary>
     [EventSource(Name = "OpenTelemetry-Sdk")]
+#if XAMARIN
+    internal class OpenTelemetrySdkEventSource : SelfLogBase
+#else
     internal class OpenTelemetrySdkEventSource : EventSource
+#endif
     {
         public static OpenTelemetrySdkEventSource Log = new OpenTelemetrySdkEventSource();
 #if DEBUG

@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // </copyright>
-
 using System;
 using System.Diagnostics.Tracing;
 
@@ -24,7 +23,11 @@ namespace OpenTelemetry.Internal
     /// This is used for internal logging of this library.
     /// </summary>
     [EventSource(Name = "OpenTelemetry-Api")]
+#if XAMARIN
+    internal class OpenTelemetryApiEventSource : SelfLogBase
+#else
     internal class OpenTelemetryApiEventSource : EventSource
+#endif
     {
         public static OpenTelemetryApiEventSource Log = new OpenTelemetryApiEventSource();
 

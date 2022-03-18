@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 // </copyright>
-
 using System;
 using System.Diagnostics.Tracing;
 using OpenTelemetry.Internal;
@@ -21,7 +20,11 @@ using OpenTelemetry.Internal;
 namespace OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation
 {
     [EventSource(Name = "OpenTelemetry-Exporter-OpenTelemetryProtocol")]
+#if XAMARIN
+    internal class OpenTelemetryProtocolExporterEventSource : SelfLogBase
+#else
     internal class OpenTelemetryProtocolExporterEventSource : EventSource
+#endif
     {
         public static readonly OpenTelemetryProtocolExporterEventSource Log = new OpenTelemetryProtocolExporterEventSource();
 

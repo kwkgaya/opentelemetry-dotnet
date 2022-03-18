@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Examples.XamarinFormsApp.MainPage">
+
+  <StackLayout>
+    <Picker x:Name="urlPicker"
+        Title="Select the otel backend url"
+        SelectedIndex="0">
+      <Picker.ItemsSource>
+        <x:Array Type="{x:Type x:String}">
+          <x:String>https://sl-sy-otel2.creativesoftware.com:4318</x:String>
+          <x:String>http://10.16.1.144:4317</x:String>
+          <x:String>https://192.168.1.75:4318</x:String>
+        </x:Array>
+      </Picker.ItemsSource>
+    </Picker>
+
+    <Button Text="Send Logs" Clicked="Button_Clicked" />
+  </StackLayout>
+
+</ContentPage>

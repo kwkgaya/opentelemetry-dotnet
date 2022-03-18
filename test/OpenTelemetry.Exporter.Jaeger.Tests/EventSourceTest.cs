@@ -14,6 +14,7 @@
 // limitations under the License.
 // </copyright>
 
+#if !XAMARIN
 using OpenTelemetry.Exporter.Jaeger.Implementation;
 using OpenTelemetry.Tests;
 using Xunit;
@@ -29,3 +30,4 @@ namespace OpenTelemetry.Exporter.Jaeger.Tests
         }
     }
 }
+#endif

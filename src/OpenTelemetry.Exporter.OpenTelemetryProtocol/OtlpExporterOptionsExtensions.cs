@@ -20,9 +20,6 @@ using System.Reflection;
 using Grpc.Core;
 using OpenTelemetry.Exporter.OpenTelemetryProtocol.Implementation.ExportClient;
 using OpenTelemetry.Internal;
-#if NETSTANDARD2_1 || NET5_0_OR_GREATER
-using Grpc.Net.Client;
-#endif
 using MetricsOtlpCollector = Opentelemetry.Proto.Collector.Metrics.V1;
 using TraceOtlpCollector = Opentelemetry.Proto.Collector.Trace.V1;
 
@@ -30,20 +27,13 @@ namespace OpenTelemetry.Exporter
 {
     internal static class OtlpExporterOptionsExtensions
     {
-#if NETSTANDARD2_1 || NET5_0_OR_GREATER
-        public static GrpcChannel CreateChannel(this OtlpExporterOptions options)
-#else
         public static Channel CreateChannel(this OtlpExporterOptions options)
-#endif
         {
             if (options.Endpoint.Scheme != Uri.UriSchemeHttp && options.Endpoint.Scheme != Uri.UriSchemeHttps)
             {
                 throw new NotSupportedException($"Endpoint URI scheme ({options.Endpoint.Scheme}) is not supported. Currently only \"http\" and \"https\" are supported.");
             }
 
-#if NETSTANDARD2_1 || NET5_0_OR_GREATER
-            return GrpcChannel.ForAddress(options.Endpoint);
-#else
             ChannelCredentials channelCredentials;
             if (options.Endpoint.Scheme == Uri.UriSchemeHttps)
             {
@@ -55,7 +45,6 @@ namespace OpenTelemetry.Exporter
             }
 
             return new Channel(options.Endpoint.Authority, channelCredentials);
-#endif
         }
 
         public static Metadata GetMetadataFromHeaders(this OtlpExporterOptions options)

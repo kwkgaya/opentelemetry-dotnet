@@ -24,7 +24,11 @@ namespace OpenTelemetry.Extensions.Hosting.Implementation
     /// EventSource events emitted from the project.
     /// </summary>
     [EventSource(Name = "OpenTelemetry-Extensions-Hosting")]
+#if XAMARIN
+    internal class HostingExtensionsEventSource : SelfLogBase
+#else
     internal class HostingExtensionsEventSource : EventSource
+#endif
     {
         public static HostingExtensionsEventSource Log = new HostingExtensionsEventSource();
 

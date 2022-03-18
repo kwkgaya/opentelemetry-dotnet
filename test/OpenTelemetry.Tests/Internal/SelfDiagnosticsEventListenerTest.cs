@@ -14,6 +14,7 @@
 // limitations under the License.
 // </copyright>
 
+#if !XAMARIN
 using System;
 using System.Diagnostics.Tracing;
 using System.IO;
@@ -305,3 +306,4 @@ namespace OpenTelemetry.Internal.Tests
         }
     }
 }
+#endif
