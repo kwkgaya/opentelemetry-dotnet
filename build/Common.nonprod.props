@@ -30,7 +30,7 @@
     <GoogleProtobufPkgVer>[3.15.5,4.0)</GoogleProtobufPkgVer>
     <GrpcAspNetCorePkgVer>[2.27.0,3.0)</GrpcAspNetCorePkgVer>
     <GrpcAspNetCoreServerPkgVer>[2.30.0, 3.0)</GrpcAspNetCoreServerPkgVer>
-    <GrpcToolsPkgVer>[2.44.0,3.0)</GrpcToolsPkgVer>
+    <GrpcToolsPkgVer>[2.31.0,3.0)</GrpcToolsPkgVer>
     <MicrosoftAspNetMvcPkgVer>[5.2.7,6.0)</MicrosoftAspNetMvcPkgVer>
     <MicrosoftAspNetWebApiWebHostPkgVer>[5.2.7,6.0)</MicrosoftAspNetWebApiWebHostPkgVer>
     <MicrosoftAspNetWebPagesPkgVer>[3.2.7,4.0)</MicrosoftAspNetWebPagesPkgVer>

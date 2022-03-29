@@ -24,9 +24,9 @@
     -->
     <MinVerPkgVer>[2.3.0,3.0)</MinVerPkgVer>
     <GoogleProtobufPkgVer>[3.15.5,4.0)</GoogleProtobufPkgVer>
-    <GrpcPkgVer>[2.44.0,3.0)</GrpcPkgVer>
-    <GrpcNetClientPkgVer>[2.44.0,3.0)</GrpcNetClientPkgVer>
-    <GrpcToolsPkgVer>[2.44.0,3.0)</GrpcToolsPkgVer>
+    <GrpcPkgVer>[2.31.0,3.0)</GrpcPkgVer>
+    <GrpcNetClientPkgVer>[2.31.0,3.0)</GrpcNetClientPkgVer>
+    <GrpcToolsPkgVer>[2.31.0,3.0)</GrpcToolsPkgVer>
     <MicrosoftAspNetCoreHttpAbstractionsPkgVer>[2.1.1,6.0)</MicrosoftAspNetCoreHttpAbstractionsPkgVer>
     <MicrosoftAspNetCoreHttpFeaturesPkgVer>[2.1.1,6.0)</MicrosoftAspNetCoreHttpFeaturesPkgVer>
     <MicrosoftCodeAnalysisAnalyzersPkgVer>[3.3.1]</MicrosoftCodeAnalysisAnalyzersPkgVer>
