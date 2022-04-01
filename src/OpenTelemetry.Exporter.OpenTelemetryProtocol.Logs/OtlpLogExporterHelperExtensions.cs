@@ -35,12 +35,20 @@ namespace OpenTelemetry.Logs
         {
             Guard.ThrowIfNull(loggerOptions);
 
-            return AddOtlpExporter(loggerOptions, new OtlpExporterOptions(), configure);
+            return AddOtlpExporter(loggerOptions, new OtlpExporterOptions(), configure, serviceProvider: null);
         }
 
-        private static OpenTelemetryLoggerOptions AddOtlpExporter(OpenTelemetryLoggerOptions loggerOptions, OtlpExporterOptions exporterOptions, Action<OtlpExporterOptions> configure = null)
+        private static OpenTelemetryLoggerOptions AddOtlpExporter(
+            OpenTelemetryLoggerOptions loggerOptions,
+            OtlpExporterOptions exporterOptions,
+            Action<OtlpExporterOptions> configure,
+            IServiceProvider serviceProvider)
         {
             configure?.Invoke(exporterOptions);
+
+            exporterOptions.TryEnableIHttpClientFactoryIntegration(serviceProvider, "OtlpLogExporter");
+            exporterOptions.AppendExportPath(OtlpExporterOptions.LogsExportPath);
+
             var otlpExporter = new OtlpLogExporter(exporterOptions);
 
             if (exporterOptions.ExportProcessorType == ExportProcessorType.Simple)

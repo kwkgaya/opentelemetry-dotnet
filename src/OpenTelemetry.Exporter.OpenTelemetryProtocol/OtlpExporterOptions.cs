@@ -41,6 +41,7 @@ namespace OpenTelemetry.Exporter
 
         internal const string TracesExportPath = "v1/traces";
         internal const string MetricsExportPath = "v1/metrics";
+        internal const string LogsExportPath = "v1/logs";
 
         internal readonly Func<HttpClient> DefaultHttpClientFactory;
 

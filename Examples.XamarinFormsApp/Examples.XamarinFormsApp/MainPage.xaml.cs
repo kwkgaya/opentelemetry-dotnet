@@ -26,7 +26,7 @@ namespace Examples.XamarinFormsApp
                  ["diagnostics.enabled"] = "false",
                  ["env"] = "XAMARIN-LogTest-Environment",
                  ["diagnostics.sources"] = "*",
-                 ["diagnostics.exporter.opentelemetry.url"] = "https://sl-sy-otel2.creativesoftware.com:4318",
+                 ["diagnostics.exporter.opentelemetry.url"] = "https://sl-sy-otel2.creativesoftware.com/otelhttp/",
                  ["diagnostics.servicename"] = "MobileSimulator",
              };
 
@@ -114,9 +114,10 @@ namespace Examples.XamarinFormsApp
                                     options.AddOtlpExporter(
                                         o =>
                                         {
+                                            o.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
                                             var openTelemetryEndpoint =
                                                 config.GetValue<string>("diagnostics.exporter.opentelemetry.url");
-                                            o.Endpoint = new Uri(openTelemetryEndpoint, UriKind.Absolute);
+                                            o.Endpoint = new Uri(new Uri(openTelemetryEndpoint, UriKind.Absolute), "otelhttp/v1/logs"); ;
                                         });
                                     options.IncludeFormattedMessage = true;
                                     options.IncludeScopes = true;
